@@ -77,6 +77,11 @@ v1.2.1
  - Added ship name detection with new ship naming under the Info tab
  - Updated Disable Factories to work with new SE factory node layout
  
+ v1.3.8
+ - Added option to turn off spotlights
+ 
+ 
+ 
 """
 
 import xml.etree.ElementTree as ET #Used to read the SE save files
@@ -374,8 +379,26 @@ def DisableFactories(objectcluster, mode):
 				if (mode == 'soft' and block.find('Queue') == None) or mode == 'hard': #If the mode is 'soft' and there's nothing in the queue; or it's 'hard' mode to turn it off regardless
 					block.find('Enabled').text = "false" #Turn it off
 					XPrint("Turning off assembler on entity: " + object.find('EntityId').text)
+		#Added code before I realized that the new arc furnace was just a subtype of the Refinery.  The refinery code above should be working with the arc furnace already.			
+			#if attrib == "MyObjectBuilder_Blastfurnace": #Is a Blastfurnace
+				#XPrint("Found Blastfurnace")
+			#	if (mode == 'soft' and block.find('Queue') == None) or mode == 'hard': #If the mode is 'soft' and there's nothing in the queue; or it's 'hard' mode to turn it off regardless
+			#		block.find('Enabled').text = "false" #Turn it off
+			#		XPrint("Turning off Blastfurnace on entity: " + object.find('EntityId').text)
 						
-
+#Function to loop through an object cluster and disable spotlights
+def DisableSpotLights (objectcluster):
+	#XPrint ("Checking for Spotlights")
+	#XPrint (objectcluster)
+	for object in objectcluster:
+		for block in object.find('CubeBlocks'):
+			attrib = FindAttrib(block)
+			if attrib == "MyObjectBuilder_ReflectorLight": #Is a spotlight
+				XPrint ("Found Spotlight")
+				block.find('Enabled').text = "false" #Turn it off
+				XPrint("Turning off spotlight on entity: ", object.find('EntityId').text)
+										
+						
 #Function to get a list of players that own at least a part of this object cluster
 def GetClusterOwners(objectcluster):
 	shareholders = []
@@ -492,7 +515,7 @@ argparser.add_argument('--cleanup-include-solar', '-S', help="Normally solar pan
 argparser.add_argument('--cleanup-missing-attrib', '-c', help="Removes objects that are missing cubes with the given attribute, except those that have cubes that match --cleanup-missing-subtype. A list of attributes can be found on the wiki.", nargs="*", default=[])
 argparser.add_argument('--cleanup-missing-subtype', '-C', help="Removes objects that are missing cubes with the given subtype, except those that have cubes that match --cleanup-missing-attrib. A list of subtypes can be found on the wiki.", nargs="*", default=[])
 argparser.add_argument('--remove-refinery-queue', '-Q', help="As of SE 01.043, the refinery queue self-replicates and can easily get out of control and cause serious lag. This removes the 'queue' node from refineries which doesn't seem to really do anything.", default=False, action='store_true')
-
+argparser.add_argument('--disable-spotlights', '-L', help="Turns off all spotlights.", default=False, action='store_true')
 	
 args = argparser.parse_args()
 
@@ -706,6 +729,10 @@ while i < len(sectorobjects):
 		#Stop movement
 		if args.stop_movement == True:
 			KillClusterInertia(objectcluster)
+			
+		#Turn off Spotlights
+		if args.disable_spotlights == True:
+			DisableSpotLights(objectcluster)
 		
 	#end CubeGrid if
 		
